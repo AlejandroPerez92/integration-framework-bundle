@@ -19,7 +19,8 @@
         "symfony/options-resolver": "^2.8 || ^3.4",
         "symfony/validator": "^2.8 || ^3.4",
         "symfony/yaml": "^2.8 || ^3.4",
-        "symfony/event-dispatcher": "^2.8 || ^3.4"
+        "symfony/event-dispatcher": "^2.8 || ^3.4",
+        "symfony/translation": "^4.3.8"
     },
     "require-dev": {
         "doctrine/doctrine-bundle": "^1.6",
@@ -29,7 +30,8 @@
         "stomp-php/stomp-php": "4.*",
         "symfony/monolog-bundle": "^2.4",
         "symfony/phpunit-bridge": "*",
-        "symfony/stopwatch": "^2.8 || ^3.4"
+        "symfony/stopwatch": "^2.8 || ^3.4",
+        "phpunit/phpunit": "^7.5"
     },
     "config": {
         "bin-dir": "bin"
