@@ -16,6 +16,7 @@ use Smartbox\Integration\FrameworkBundle\Core\Exchange;
 use Smartbox\Integration\FrameworkBundle\Core\Messages\Context;
 use Smartbox\Integration\FrameworkBundle\Core\Messages\Message;
 use Smartbox\Integration\FrameworkBundle\Tests\Functional\BaseTestCase;
+use Symfony\Component\OptionsResolver\Exception\MissingOptionsException;
 
 /**
  * Class RestConfigurableProducerTest.
@@ -132,7 +133,7 @@ class RestConfigurableProducerTest extends BaseTestCase
         $this->assertEquals($expectedPath, $request->getUri()->getPath());
     }
 
-    public function testShouldAllowGetWithoutQuery()
+    public function testShouldAllowGetWithoutQueryAndBody()
     {
         $requestUri = 'v0/put/cats';
         $baseUri = 'http://someservice.com/api/';
@@ -154,7 +155,6 @@ class RestConfigurableProducerTest extends BaseTestCase
         $actionParams = [
             RestConfigurableProducer::REQUEST_NAME => 'someRequest',
             RestConfigurableProducer::REQUEST_HTTP_VERB => 'GET',
-            RestConfigurableProducer::REQUEST_BODY => [],
             RestConfigurableProducer::REQUEST_URI => $requestUri,
             RestConfigurableProducer::DISPLAY_RESPONSE_ERROR => false,
         ];
@@ -175,5 +175,65 @@ class RestConfigurableProducerTest extends BaseTestCase
 
         $response = $producer->executeStep(RestConfigurableProducer::STEP_REQUEST, $actionParams, $options, $context);
         $this->assertTrue($response, 'The producer should return true to say it has completed the Request Step');
+    }
+
+    /**
+     * @dataProvider requiredMethodsWithBody
+     * @return void
+     */
+    public function testShouldThrowExceptionOnMethodsWithoutBody(string $method)
+    {
+        $this->expectException(MissingOptionsException::class);
+        $this->expectExceptionMessage('The required option "body" is missing.');
+
+        $requestUri = 'v0/put/cats';
+        $baseUri = 'http://someservice.com/api/';
+
+        $mockHandler = new MockHandler([
+            new Response(200, ['X-Foo' => 'Bar']),
+        ]);
+
+        $container = [];
+        $history = Middleware::history($container);
+        $stack = HandlerStack::create($mockHandler);
+        $stack->push($history);
+
+        $client = new Client(['handler' => $stack]);
+
+        $producer = $this->producer;
+        $producer->setHttpClient($client);
+
+        $actionParams = [
+            RestConfigurableProducer::REQUEST_NAME => 'someRequest',
+            RestConfigurableProducer::REQUEST_HTTP_VERB => $method,
+            RestConfigurableProducer::REQUEST_URI => $requestUri,
+            RestConfigurableProducer::DISPLAY_RESPONSE_ERROR => false,
+        ];
+
+        $options = [
+            RestConfigurableProtocol::OPTION_BASE_URI => $baseUri,
+            RestConfigurableProtocol::OPTION_ENCODING => RestConfigurableProtocol::ENCODING_JSON,
+            ConfigurableWebserviceProtocol::OPTION_CONNECT_TIMEOUT => 10,
+            ConfigurableWebserviceProtocol::OPTION_TIMEOUT => 10,
+            RestConfigurableProtocol::OPTION_HEADERS => [],
+            RestConfigurableProtocol::OPTION_AUTH => false,
+        ];
+        $context = [
+            'vars' => [],
+            'msg'  => new Message(new SerializableThing(), [], new Context()),
+            'exchange' => new Exchange(),
+        ];
+
+        $producer->executeStep(RestConfigurableProducer::STEP_REQUEST, $actionParams, $options, $context);
+    }
+
+    public function requiredMethodsWithBody()
+    {
+        return [
+            ['POST'],
+            ['PUT'],
+            ['DELETE'],
+            ['PATCH'],
+        ];
     }
 }

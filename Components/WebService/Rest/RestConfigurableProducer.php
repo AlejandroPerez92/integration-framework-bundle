@@ -102,9 +102,14 @@ class RestConfigurableProducer extends AbstractWebServiceProducer implements Htt
         $stepParamsResolver->setRequired([
             self::REQUEST_NAME,
             self::REQUEST_HTTP_VERB,
-            self::REQUEST_BODY,
             self::REQUEST_URI,
         ]);
+
+        if ($stepActionParams[self::REQUEST_HTTP_VERB] != 'GET') {
+            $stepParamsResolver->setRequired([
+                self::REQUEST_BODY,
+            ]);
+        }
 
         $stepParamsResolver->setDefault(self::DISPLAY_RESPONSE_ERROR, false);
         $stepParamsResolver->setDefault(self::REQUEST_EXPECTED_RESPONSE_TYPE, 'array');
@@ -167,12 +172,14 @@ class RestConfigurableProducer extends AbstractWebServiceProducer implements Htt
 
         $encoding = $endpointOptions[RestConfigurableProtocol::OPTION_ENCODING];
 
-        $body = $this->confHelper->resolve($params[self::REQUEST_BODY], $context);
         $requestBody = '';
-        if ($body) {
-            $requestBody = $this->encodeRequestBody($encoding, $body);
+        if (key_exists(self::REQUEST_BODY, $params)) {
+            $body = $this->confHelper->resolve($params[self::REQUEST_BODY], $context);
+            if ($body) {
+                $requestBody = $this->encodeRequestBody($encoding, $body);
+            }
+            $restOptions['body'] = $requestBody;
         }
-        $restOptions['body'] = $requestBody;
 
         if ('GET' == $httpMethod && key_exists(self::REQUEST_QUERY_PARAMETERS, $params)) {
             $queryParameters = $this->confHelper->resolve($params[self::REQUEST_QUERY_PARAMETERS], $context);
